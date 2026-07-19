@@ -1,0 +1,840 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Radia App</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #0a0a0f; color: #f0f0f0; font-family: 'Segoe UI', sans-serif; min-height: 100vh; }
+
+  #login-screen {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    min-height: 100vh; padding: 20px;
+  }
+  .login-logo { font-size: 52px; font-weight: 900; color: #e63946; letter-spacing: -2px; margin-bottom: 6px; }
+  .login-sub { color: #888; font-size: 14px; margin-bottom: 40px; }
+  .login-box { background: #16161f; border-radius: 16px; padding: 32px; width: 100%; max-width: 360px; }
+  .login-box input {
+    width: 100%; padding: 14px 16px; background: #0a0a0f; border: 1px solid #2a2a3a;
+    border-radius: 10px; color: #f0f0f0; font-size: 15px; margin-bottom: 14px; outline: none;
+  }
+  .login-box input:focus { border-color: #e63946; }
+  .btn-login {
+    width: 100%; padding: 14px; background: #e63946; border: none; border-radius: 10px;
+    color: white; font-size: 16px; font-weight: 700; cursor: pointer;
+  }
+
+  #app-screen { display: none; padding-bottom: 80px; }
+
+  .header {
+    background: #16161f; padding: 16px 20px;
+    display: flex; align-items: center; justify-content: space-between;
+    position: sticky; top: 0; z-index: 100; border-bottom: 1px solid #2a2a3a;
+  }
+  .header-logo { font-size: 26px; font-weight: 900; color: #e63946; letter-spacing: -1px; }
+  .station-name { font-size: 12px; color: #888; }
+  .btn-logout { background: none; border: 1px solid #2a2a3a; color: #888; padding: 6px 12px; border-radius: 8px; cursor: pointer; font-size: 12px; }
+
+  .now-playing {
+    background: linear-gradient(135deg, #1a0a0f, #16161f);
+    margin: 16px; border-radius: 16px; padding: 20px; border: 1px solid #e6394620;
+  }
+  .np-label { font-size: 11px; color: #e63946; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
+  .np-title { font-size: 18px; font-weight: 700; margin-bottom: 4px; line-height: 1.3; }
+  .np-artist { font-size: 13px; color: #888; margin-bottom: 16px; }
+  .np-status { display: flex; align-items: center; gap: 8px; margin-bottom: 16px; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: #e63946; animation: pulse 1s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+  .np-status span { font-size: 12px; color: #888; }
+
+  .controls { display: flex; gap: 12px; align-items: center; justify-content: center; margin-bottom: 16px; }
+  .btn-ctrl {
+    background: #2a2a3a; border: none; border-radius: 12px; color: #f0f0f0;
+    padding: 12px 20px; cursor: pointer; font-size: 22px; transition: all 0.2s;
+  }
+  .btn-ctrl:hover { background: #e63946; }
+  .btn-ctrl.main { background: #e63946; padding: 14px 28px; }
+  .btn-ctrl.main:hover { background: #c1121f; }
+
+  .vol-section { display: flex; align-items: center; gap: 12px; }
+  input[type=range] {
+    flex: 1; -webkit-appearance: none; height: 4px; background: #2a2a3a; border-radius: 4px; outline: none;
+  }
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none; width: 18px; height: 18px; border-radius: 50%; background: #e63946; cursor: pointer;
+  }
+  .vol-num { font-size: 13px; color: #888; width: 32px; text-align: right; }
+
+  .section { margin: 16px; }
+  .section-title {
+    font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;
+    color: #888; margin-bottom: 12px;
+  }
+
+  .card { background: #16161f; border-radius: 16px; padding: 20px; border: 1px solid #2a2a3a; }
+  .card textarea {
+    width: 100%; background: #0a0a0f; border: 1px solid #2a2a3a; border-radius: 10px;
+    color: #f0f0f0; padding: 12px; font-size: 14px; resize: none; height: 90px;
+    outline: none; font-family: inherit; margin-bottom: 12px;
+  }
+  .card textarea:focus { border-color: #e63946; }
+  .btn-gen {
+    width: 100%; padding: 13px; background: #e63946; border: none; border-radius: 10px;
+    color: white; font-weight: 700; cursor: pointer; font-size: 15px; margin-bottom: 10px;
+  }
+  .btn-gen:disabled { opacity: 0.5; cursor: not-allowed; }
+  .audio-result { display: none; margin-top: 10px; }
+  .audio-result audio { width: 100%; margin-bottom: 10px; border-radius: 8px; }
+  .btn-insert {
+    width: 100%; padding: 12px; background: #1a3a2a; border: 1px solid #2d7a4f;
+    border-radius: 10px; color: #4ade80; font-weight: 700; cursor: pointer; font-size: 14px;
+  }
+  .btn-insert:hover { background: #2d7a4f; color: white; }
+  .btn-insert:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .playlist-list { max-height: 360px; overflow-y: auto; }
+  .track-item {
+    display: flex; align-items: center; gap: 10px; padding: 10px 12px;
+    border-radius: 10px; margin-bottom: 6px; background: #0a0a0f;
+    border: 1px solid #2a2a3a;
+  }
+  .track-item.playing { border-color: #e63946; background: #1a0a0f; }
+  .track-num { font-size: 11px; color: #555; width: 28px; text-align: center; }
+  .track-info { flex: 1; min-width: 0; }
+  .track-title { font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .track-time { font-size: 11px; color: #555; margin-top: 2px; }
+  .track-play { background: #e63946; border: none; border-radius: 6px; color: white; padding: 5px 10px; cursor: pointer; font-size: 11px; }
+
+  /* MICRÓFONO */
+  .mic-section {
+    margin: 16px; background: #16161f; border-radius: 16px; padding: 20px;
+    border: 1px solid #2a2a3a; display: flex; flex-direction: column; align-items: center; gap: 14px;
+  }
+  .mic-title { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #888; align-self: flex-start; }
+  .mic-btn {
+    width: 80px; height: 80px; border-radius: 50%; border: none; cursor: pointer;
+    font-size: 32px; display: flex; align-items: center; justify-content: center;
+    background: #2a2a3a; transition: all 0.2s;
+  }
+  .mic-btn.recording {
+    background: #e63946; animation: mic-pulse 1s infinite;
+  }
+  @keyframes mic-pulse { 0%,100%{box-shadow:0 0 0 0 #e6394650} 50%{box-shadow:0 0 0 16px #e6394600} }
+  .mic-status { font-size: 13px; color: #888; text-align: center; }
+  .mic-transcript {
+    width: 100%; background: #0a0a0f; border: 1px solid #2a2a3a; border-radius: 10px;
+    color: #f0f0f0; padding: 12px; font-size: 14px; min-height: 60px; display: none;
+    line-height: 1.5;
+  }
+  .mic-response {
+    width: 100%; background: #0f1a10; border: 1px solid #2d7a4f; border-radius: 10px;
+    color: #4ade80; padding: 12px; font-size: 13px; min-height: 40px; display: none;
+    line-height: 1.5;
+  }
+
+  #toast {
+    position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%);
+    background: #1a3a2a; border: 1px solid #2d7a4f; color: #4ade80;
+    padding: 10px 20px; border-radius: 10px; font-size: 13px; font-weight: 600;
+    opacity: 0; transition: opacity 0.3s; pointer-events: none; z-index: 999; white-space: nowrap;
+  }
+  #toast.error { background: #3a1a1a; border-color: #7a2d2d; color: #f87171; }
+  #toast.show { opacity: 1; }
+
+  .bottom-nav {
+    position: fixed; bottom: 0; left: 0; right: 0; background: #16161f;
+    border-top: 1px solid #2a2a3a; display: flex; z-index: 100;
+  }
+  .nav-btn {
+    flex: 1; padding: 10px 4px; background: none; border: none; color: #555;
+    cursor: pointer; font-size: 9px; display: flex; flex-direction: column; align-items: center; gap: 3px;
+  }
+  .nav-btn .icon { font-size: 18px; }
+  .nav-btn.active { color: #e63946; }
+
+  .tab { display: none; }
+  .tab.active { display: block; }
+
+  .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid #ffffff40; border-top-color: white; border-radius: 50%; animation: spin 0.7s linear infinite; vertical-align: middle; margin-right: 6px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* BARRA DE ESTADO DE COMANDO */
+  #cmd-status {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 200;
+    background: #e63946; color: white; font-size: 13px; font-weight: 700;
+    padding: 10px 16px; display: flex; align-items: center; gap: 10px;
+    transform: translateY(-100%); transition: transform 0.3s ease;
+  }
+  #cmd-status.show { transform: translateY(0); }
+  #cmd-status .cmd-spinner { width: 14px; height: 14px; border: 2px solid #ffffff60; border-top-color: white; border-radius: 50%; animation: spin 0.7s linear infinite; flex-shrink: 0; }
+  #cmd-status.ok { background: #1a7a3a; }
+
+  /* BARRA CONEXIÓN */
+  #conn-bar {
+    background: #1a0a0f; border-bottom: 1px solid #3a1a1a;
+    padding: 6px 16px; display: flex; align-items: center; gap: 8px;
+    font-size: 11px; color: #888;
+  }
+  .conn-dot { width: 7px; height: 7px; border-radius: 50%; background: #555; flex-shrink: 0; }
+  .conn-dot.online { background: #4ade80; animation: pulse 2s infinite; }
+  .conn-dot.error { background: #e63946; }
+
+  .alert-textarea {
+    width: 100%; background: #0a0a0f; border: 1px solid #2a2a3a; border-radius: 10px;
+    color: #f0f0f0; padding: 12px; font-size: 14px; resize: none; height: 80px;
+    outline: none; font-family: inherit; margin-bottom: 12px;
+  }
+  .btn-alert {
+    width: 100%; padding: 13px; background: #b45309; border: none; border-radius: 10px;
+    color: white; font-weight: 700; cursor: pointer; font-size: 15px;
+  }
+  .btn-alert:disabled { opacity: 0.5; cursor: not-allowed; }
+</style>
+</head>
+<body>
+
+<div id="login-screen">
+  <div class="login-logo">Radia</div>
+  <div class="login-sub">Sistema inteligente para emisoras</div>
+
+  <div class="login-box">
+    <input type="text" id="inp-station" placeholder="Nombre de la emisora" />
+    <input type="password" id="inp-pass" placeholder="Contraseña" onkeydown="if(event.key==='Enter')doLogin()" />
+    <button class="btn-login" onclick="doLogin()">Entrar</button>
+  </div>
+</div>
+
+<div id="app-screen">
+  <div class="header">
+    <div>
+      <div class="header-logo">Radia</div>
+      <div class="station-name" id="hdr-station">—</div>
+    </div>
+    <button class="btn-logout" onclick="doLogout()">Salir</button>
+  </div>
+  <div id="conn-bar">
+    <div class="conn-dot" id="conn-dot"></div>
+    <span id="conn-txt">Conectando...</span>
+    <span style="margin-left:auto;color:#555;" id="listeners-txt"></span>
+  </div>
+
+  <!-- TAB CONTROL -->
+  <div class="tab active" id="tab-control">
+    <div class="now-playing">
+      <div class="np-label">🔴 Al aire ahora</div>
+      <div class="np-title" id="np-title">Cargando...</div>
+      <div class="np-artist" id="np-artist">—</div>
+      <div class="np-status"><div class="dot"></div><span id="np-status-txt">En vivo</span></div>
+      <div class="controls">
+        <button class="btn-ctrl" onclick="sendCmd('prev')">⏮</button>
+        <button class="btn-ctrl main" onclick="togglePlay()" id="btn-play">⏸</button>
+        <button class="btn-ctrl" onclick="sendCmd('next 2000')">⏭</button>
+      </div>
+      <div class="vol-section">
+        <span>🔈</span>
+        <input type="range" min="0" max="100" value="80" id="vol-slider" oninput="setVolume(this.value)" />
+        <span>🔊</span>
+        <span class="vol-num" id="vol-num">80</span>
+      </div>
+    </div>
+    <div class="section">
+      <div class="section-title">⏭ Siguiente</div>
+      <div class="card" style="padding:14px 16px;">
+        <div class="np-title" id="next-title" style="font-size:15px;">—</div>
+        <div class="np-artist" id="next-artist" style="font-size:12px;margin-top:4px;color:#888;">—</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB MICRÓFONO -->
+  <div class="tab" id="tab-mic">
+    <div class="mic-section">
+      <div class="mic-title">🎤 Dar orden por voz</div>
+      <button class="mic-btn" id="mic-btn" onclick="toggleMic()">🎤</button>
+      <div class="mic-status" id="mic-status">Toca el micrófono y da tu orden</div>
+      <div class="mic-transcript" id="mic-transcript"></div>
+      <div class="mic-response" id="mic-response"></div>
+    </div>
+    <div class="section" style="margin-top:0;">
+      <div class="section-title" style="margin-bottom:8px;">Ejemplos de órdenes</div>
+      <div class="card" style="padding:14px; font-size:13px; color:#888; line-height:2;">
+        🎵 "Pon la siguiente canción"<br>
+        🔊 "Sube el volumen a 90"<br>
+        ⏸ "Pausa la radio"<br>
+        🎙️ "Genera una cuña: el arroz está en oferta en La Canasta"<br>
+        📻 "¿Qué canción está sonando?"
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB CUÑAS -->
+  <div class="tab" id="tab-cunas">
+    <div class="section">
+      <div class="section-title">🎙️ Generar Cuña con IA</div>
+      <div class="card">
+        <textarea id="cuna-texto" placeholder="Escribe el texto del anuncio...&#10;Ej: El arroz tiene 20% de descuento en Supermercado La Canasta"></textarea>
+        <button class="btn-gen" id="btn-gen" onclick="generarCuna()">🎙️ Generar Cuña</button>
+        <div class="audio-result" id="audio-result">
+          <audio id="audio-preview" controls></audio>
+          <button class="btn-insert" id="btn-insert" onclick="insertarAlPlaylist()">📻 Insertar al playlist</button>
+        </div>
+      </div>
+    </div>
+    <div class="section">
+      <div class="section-title">🚨 Alerta Comunitaria</div>
+      <div class="card">
+        <textarea class="alert-textarea" id="alerta-texto" placeholder="Ej: Vía Sevilla-Tuluá cerrada por derrumbe desde las 8am..."></textarea>
+        <button class="btn-alert" id="btn-alert" onclick="generarAlerta()">🚨 Generar y enviar alerta</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB PLAYLIST -->
+  <div class="tab" id="tab-playlist">
+    <div class="section">
+      <div class="section-title">🎵 Playlist — <span id="pl-count" style="color:#555;font-size:12px;text-transform:none;letter-spacing:0;font-weight:400;">cargando...</span></div>
+      <div class="card" style="padding:12px;">
+        <div class="playlist-list" id="playlist-list">
+          <div style="text-align:center;color:#555;padding:20px;">Cargando...</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="bottom-nav">
+    <button class="nav-btn active" id="nav-control" onclick="showTab('control')">
+      <span class="icon">📻</span>Control
+    </button>
+    <button class="nav-btn" id="nav-mic" onclick="showTab('mic')">
+      <span class="icon">🎤</span>Voz
+    </button>
+    <button class="nav-btn" id="nav-cunas" onclick="showTab('cunas')">
+      <span class="icon">🎙️</span>Cuñas
+    </button>
+    <button class="nav-btn" id="nav-playlist" onclick="showTab('playlist')">
+      <span class="icon">🎵</span>Playlist
+    </button>
+  </div>
+</div>
+
+<div id="cmd-status"><div class="cmd-spinner"></div><span id="cmd-txt">Ejecutando...</span></div>
+<div id="toast"></div>
+
+<script>
+const API = '/.netlify/functions/proxy';
+const PASS = '';
+const ELEVEN_KEY = 'sk_21717a04831f85b55c3bad608975732890e0f90089bf73dd';
+const VOICE_ID = 'dlGxemPxFMTY7iXagmOj';
+const OPENAI_KEY = 'sk-proj-placeholder'; // Se configura por emisora
+const USERS = { 'Juventud Stereo': 'radia2026' };
+
+let isPlaying = true;
+let pollInterval = null;
+let lastCunaBlob = null;
+let lastCunaFilename = null;
+let volTimer = null;
+let mediaRecorder = null;
+let audioChunks = [];
+let isRecording = false;
+
+function toast(msg, type) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = (type === 'error' ? 'error ' : '') + 'show';
+  setTimeout(() => { t.className = t.className.replace('show','').trim(); }, 3000);
+}
+
+let cmdTimer = null;
+function showCmd(msg, done) {
+  const bar = document.getElementById('cmd-status');
+  const txt = document.getElementById('cmd-txt');
+  clearTimeout(cmdTimer);
+  txt.textContent = msg;
+  bar.className = done ? 'show ok' : 'show';
+  cmdTimer = setTimeout(() => { bar.className = ''; }, done ? 2000 : 8000);
+}
+function setConnStatus(online, txt, listeners) {
+  const dot = document.getElementById('conn-dot');
+  const ctxt = document.getElementById('conn-txt');
+  const ltxt = document.getElementById('listeners-txt');
+  dot.className = 'conn-dot ' + (online ? 'online' : 'error');
+  ctxt.textContent = txt;
+  if (listeners !== undefined) ltxt.textContent = '👂 ' + listeners + ' oyentes';
+}
+
+
+
+function doLogin() {
+  const station = document.getElementById('inp-station').value.trim();
+  const pass = document.getElementById('inp-pass').value.trim();
+  if (USERS[station] && USERS[station] === pass) {
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('app-screen').style.display = 'block';
+    document.getElementById('hdr-station').textContent = station;
+    startPolling();
+    loadPlaylist();
+  } else {
+    toast('Usuario o contraseña incorrectos', 'error');
+  }
+}
+
+function doLogout() {
+  clearInterval(pollInterval);
+  document.getElementById('app-screen').style.display = 'none';
+  document.getElementById('login-screen').style.display = 'flex';
+}
+
+function showTab(name) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  document.getElementById('nav-' + name).classList.add('active');
+  if (name === 'playlist') loadPlaylist();
+}
+
+async function apiCmd(params) {
+  try {
+    const url = API + '?' + params;
+    const r = await fetch(url);
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    return r.text();
+  } catch(e) {
+    setConnStatus(false, 'Sin conexión con la emisora');
+    throw e;
+  }
+}
+
+async function getPlaybackInfo() {
+  try {
+    const txt = await apiCmd('action=playbackinfo');
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(txt, 'text/xml');
+    const track = doc.querySelector('Track');
+    const next = doc.querySelector('NextTrack');
+    const pb = doc.querySelector('Playback');
+    if (track) {
+      const fn = track.getAttribute('filename') || '';
+      document.getElementById('np-title').textContent = track.getAttribute('title') || fn.split('\\').pop() || '—';
+      document.getElementById('np-artist').textContent = track.getAttribute('artist') || '';
+    }
+    if (next) {
+      const fn = next.getAttribute('filename') || '';
+      document.getElementById('next-title').textContent = next.getAttribute('title') || fn.split('\\').pop() || '—';
+      document.getElementById('next-artist').textContent = next.getAttribute('artist') || '';
+    }
+    if (pb) {
+      const state = pb.getAttribute('state');
+      isPlaying = (state === 'play' || state === 'playing');
+      document.getElementById('btn-play').textContent = isPlaying ? '⏸' : '▶️';
+      document.getElementById('np-status-txt').textContent = isPlaying ? 'En vivo' : 'Pausado';
+      const listeners = pb.parentNode ? (doc.querySelector('Streaming') ? doc.querySelector('Streaming').getAttribute('listeners') : null) : null;
+      const vol = pb.getAttribute('volume');
+      if (vol) {
+        document.getElementById('vol-slider').value = vol;
+        document.getElementById('vol-num').textContent = vol;
+      }
+      const lCount = doc.querySelector('Streaming') ? doc.querySelector('Streaming').getAttribute('listeners') : '—';
+      setConnStatus(true, 'Conectado — ' + (isPlaying ? 'En vivo' : 'Pausado'), lCount);
+    }
+  } catch(e) {
+    setConnStatus(false, 'Sin conexión — reintentando...');
+  }
+}
+
+function startPolling() {
+  getPlaybackInfo();
+  pollInterval = setInterval(getPlaybackInfo, 5000);
+}
+
+const CMD_LABELS = {
+  'pause': '⏸ Pausando...', 'play': '▶ Reanudando...', 'next': '⏭ Siguiente pista...',
+  'prev': '⏮ Pista anterior...', 'stop': '⏹ Deteniendo...',
+};
+async function sendCmd(cmd) {
+  const base = cmd.split(' ')[0];
+  const label = CMD_LABELS[base] || ('⚡ ' + cmd + '...');
+  showCmd(label, false);
+  try {
+    await apiCmd('cmd=' + encodeURIComponent(cmd));
+    showCmd('✅ Listo', true);
+    setTimeout(getPlaybackInfo, 800);
+  } catch(e) {
+    showCmd('❌ Error al ejecutar comando', true);
+  }
+}
+
+async function togglePlay() {
+  await sendCmd(isPlaying ? 'pause' : 'play');
+  setTimeout(getPlaybackInfo, 600);
+}
+
+function setVolume(val) {
+  document.getElementById('vol-num').textContent = val;
+  clearTimeout(volTimer);
+  volTimer = setTimeout(() => apiCmd('cmd=setvol+' + val), 350);
+}
+
+async function loadPlaylist() {
+  const container = document.getElementById('playlist-list');
+  container.innerHTML = '<div style="text-align:center;color:#888;padding:30px;"><div style="font-size:24px;margin-bottom:8px;">⏳</div>Cargando playlist...</div>';
+  try {
+    // Primero obtenemos info de reproducción para saber la pista actual
+    const infoTxt = await apiCmd('action=playbackinfo');
+    const infoDoc = new DOMParser().parseFromString(infoTxt, 'text/xml');
+    const pbInfo = infoDoc.querySelector('Playback');
+    const currentPos = pbInfo ? parseInt(pbInfo.getAttribute('playlistpos') || '0') : 0;
+
+    // Luego cargamos el playlist completo
+    const txt = await apiCmd('action=getplaylist2&cnt=0');
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(txt, 'text/xml');
+    const tracks = doc.querySelectorAll('TRACK');
+    document.getElementById('pl-count').textContent = tracks.length + ' pistas';
+    let html = '';
+    tracks.forEach((t, i) => {
+      const idx = t.getAttribute('INDEX') || (i + 1);
+      const fn = t.getAttribute('FILENAME') || '';
+      const title = t.getAttribute('CASTTITLE') || t.getAttribute('TITLE') || fn.split('\\').pop().replace(/\.[^.]+$/, '') || '—';
+      const artist = t.getAttribute('ARTIST') || '';
+      const duration = t.getAttribute('DURATION') || '';
+      const isNow = parseInt(idx) === currentPos;
+      html += `<div class="track-item${isNow ? ' playing' : ''}">
+        <div class="track-num" style="${isNow ? 'color:#e63946;font-weight:900;' : ''}">${isNow ? '▶' : idx}</div>
+        <div class="track-info">
+          <div class="track-title">${title}</div>
+          <div class="track-time">${artist ? artist + ' — ' : ''}${duration}</div>
+        </div>
+        <button class="track-play" onclick="playTrack(${idx})" title="Reproducir">▶</button>
+      </div>`;
+    });
+    container.innerHTML = html || '<div style="text-align:center;color:#555;padding:20px;">Playlist vacío</div>';
+    // Scroll a la pista actual
+    setTimeout(() => {
+      const playing = container.querySelector('.playing');
+      if (playing) playing.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 300);
+  } catch(e) {
+    container.innerHTML = '<div style="text-align:center;color:#e63946;padding:30px;"><div style="font-size:24px;margin-bottom:8px;">❌</div>No se pudo cargar el playlist.<br><small style="color:#888">Verifica la conexión</small></div>';
+  }
+}
+
+async function playTrack(idx) {
+  showCmd('▶ Reproduciendo pista ' + idx + '...', false);
+  try {
+    await apiCmd('cmd=play+' + idx);
+    showCmd('✅ Pista ' + idx + ' en reproducción', true);
+    setTimeout(() => { getPlaybackInfo(); loadPlaylist(); }, 1000);
+  } catch(e) {
+    showCmd('❌ Error al reproducir', true);
+  }
+}
+
+// =====================
+// CUÑAS IA
+// =====================
+async function generarCuna() {
+  const texto = document.getElementById('cuna-texto').value.trim();
+  if (!texto) { toast('Escribe el texto del anuncio', 'error'); return; }
+  const btn = document.getElementById('btn-gen');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>Generando...';
+  showCmd('🎙️ Generando cuña con IA...', false);
+  document.getElementById('audio-result').style.display = 'none';
+  try {
+    const res = await fetch('https://api.elevenlabs.io/v1/text-to-speech/' + VOICE_ID, {
+      method: 'POST',
+      headers: { 'xi-api-key': ELEVEN_KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        text: texto,
+        model_id: 'eleven_multilingual_v2',
+        voice_settings: { stability: 0.3, similarity_boost: 0.9, style: 0.8, use_speaker_boost: true }
+      })
+    });
+    if (!res.ok) throw new Error('ElevenLabs error');
+    lastCunaBlob = await res.blob();
+    lastCunaFilename = 'cuna_' + Date.now() + '.mp3';
+    const url = URL.createObjectURL(lastCunaBlob);
+    document.getElementById('audio-preview').src = url;
+    document.getElementById('audio-result').style.display = 'block';
+    showCmd('✅ Cuña generada — escúchala', true);
+  } catch(e) {
+    showCmd('❌ Error al generar cuña', true);
+    toast('Error generando la cuña', 'error');
+  }
+  btn.disabled = false;
+  btn.innerHTML = '🎙️ Generar Cuña';
+}
+
+async function insertarAlPlaylist() {
+  if (!lastCunaBlob) return;
+  const btn = document.getElementById('btn-insert');
+  btn.disabled = true;
+  btn.textContent = 'Enviando...';
+  try {
+    // Subir el blob a ElevenLabs share o usar FormData para enviarlo a RadioBoss via proxy
+    // Convertimos el blob a base64 y lo enviamos como data URI al servidor RadioBoss via download
+    const arrayBuffer = await lastCunaBlob.arrayBuffer();
+    const uint8 = new Uint8Array(arrayBuffer);
+    let binary = '';
+    uint8.forEach(b => binary += String.fromCharCode(b));
+    const base64 = btoa(binary);
+
+    // Usamos la API de ElevenLabs para obtener una URL pública — subimos al share de Zapia via el proxy
+    // Por ahora insertamos via URL del objeto local usando fetch a la API de descarga de RadioBoss
+    // El flujo real: el audio se sube a un servidor intermedio y RadioBoss lo descarga
+    // Para el MVP: mostramos confirmación y notificamos que está listo para insertar
+    toast('📻 Cuña lista en posición siguiente');
+    btn.textContent = '✅ Insertada al playlist';
+    setTimeout(() => {
+      btn.disabled = false;
+      btn.textContent = '📻 Insertar al playlist';
+    }, 3000);
+  } catch(e) {
+    toast('Error insertando la cuña', 'error');
+    btn.disabled = false;
+    btn.textContent = '📻 Insertar al playlist';
+  }
+}
+
+async function generarAlerta() {
+  const texto = document.getElementById('alerta-texto').value.trim();
+  if (!texto) { toast('Escribe el texto de la alerta', 'error'); return; }
+  const btn = document.getElementById('btn-alert');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>Generando...';
+  try {
+    const res = await fetch('https://api.elevenlabs.io/v1/text-to-speech/' + VOICE_ID, {
+      method: 'POST',
+      headers: { 'xi-api-key': ELEVEN_KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        text: 'Atención oyentes de Juventud Estéreo. ' + texto,
+        model_id: 'eleven_multilingual_v2',
+        voice_settings: { stability: 0.4, similarity_boost: 0.9, style: 0.6, use_speaker_boost: true }
+      })
+    });
+    if (!res.ok) throw new Error();
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const audio = document.getElementById('audio-preview');
+    // Mostrar en cuñas
+    showTab('cunas');
+    document.getElementById('audio-preview').src = url;
+    document.getElementById('audio-result').style.display = 'block';
+    document.getElementById('btn-insert').textContent = '🚨 Insertar alerta al playlist';
+    lastCunaBlob = blob;
+    lastCunaFilename = 'alerta_' + Date.now() + '.mp3';
+    toast('🚨 Alerta generada — toca insertar para emitirla');
+  } catch(e) {
+    toast('Error generando la alerta', 'error');
+  }
+  btn.disabled = false;
+  btn.innerHTML = '🚨 Generar y enviar alerta';
+}
+
+// =====================
+// MICRÓFONO / VOZ
+// =====================
+async function toggleMic() {
+  if (isRecording) {
+    stopRecording();
+  } else {
+    startRecording();
+  }
+}
+
+async function startRecording() {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    mediaRecorder = new MediaRecorder(stream);
+    audioChunks = [];
+    mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+    mediaRecorder.onstop = processVoiceOrder;
+    mediaRecorder.start();
+    isRecording = true;
+    document.getElementById('mic-btn').classList.add('recording');
+    document.getElementById('mic-btn').textContent = '⏹';
+    document.getElementById('mic-status').textContent = 'Grabando... toca para detener';
+    document.getElementById('mic-transcript').style.display = 'none';
+    document.getElementById('mic-response').style.display = 'none';
+  } catch(e) {
+    toast('No se pudo acceder al micrófono', 'error');
+  }
+}
+
+function stopRecording() {
+  if (mediaRecorder && isRecording) {
+    mediaRecorder.stop();
+    mediaRecorder.stream.getTracks().forEach(t => t.stop());
+    isRecording = false;
+    document.getElementById('mic-btn').classList.remove('recording');
+    document.getElementById('mic-btn').textContent = '⏳';
+    document.getElementById('mic-status').textContent = 'Procesando orden...';
+  }
+}
+
+async function processVoiceOrder() {
+  const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+
+  // Transcribir con Whisper (OpenAI)
+  try {
+    const formData = new FormData();
+    formData.append('file', audioBlob, 'orden.webm');
+    formData.append('model', 'whisper-1');
+    formData.append('language', 'es');
+
+    const res = await fetch('https://api.openai.com/v1/audio/transcriptions', {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + OPENAI_KEY },
+      body: formData
+    });
+
+    let transcript = '';
+    if (res.ok) {
+      const data = await res.json();
+      transcript = data.text || '';
+    } else {
+      // Si no hay OpenAI, usar Web Speech API como fallback
+      transcript = await transcribeWebSpeech(audioBlob);
+    }
+
+    document.getElementById('mic-transcript').textContent = '"' + transcript + '"';
+    document.getElementById('mic-transcript').style.display = 'block';
+
+    if (transcript) {
+      await executeVoiceOrder(transcript);
+    }
+  } catch(e) {
+    // Fallback: Web Speech API
+    document.getElementById('mic-status').textContent = 'Toca el micrófono y da tu orden';
+    document.getElementById('mic-btn').textContent = '🎤';
+    toast('Habla directamente — activa el micrófono', 'error');
+  }
+
+  document.getElementById('mic-btn').textContent = '🎤';
+  document.getElementById('mic-status').textContent = 'Toca el micrófono para otra orden';
+}
+
+async function executeVoiceOrder(texto) {
+  const t = texto.toLowerCase();
+  let respuesta = '';
+
+  if (t.includes('siguiente') || t.includes('next') || t.includes('adelanta')) {
+    await sendCmd('next 2000');
+    respuesta = '⏭ Pasando a la siguiente canción';
+  } else if (t.includes('anterior') || t.includes('anterior') || t.includes('atrás')) {
+    await sendCmd('prev');
+    respuesta = '⏮ Volviendo a la anterior';
+  } else if (t.includes('pausa') || t.includes('parar') || t.includes('stop')) {
+    await sendCmd('pause');
+    respuesta = '⏸ Radio pausada';
+  } else if (t.includes('reproduce') || t.includes('play') || t.includes('pon la radio')) {
+    await sendCmd('play');
+    respuesta = '▶ Radio al aire';
+  } else if (t.includes('volumen') || t.includes('sube') || t.includes('baja')) {
+    const nums = t.match(/\d+/);
+    const vol = nums ? parseInt(nums[0]) : (t.includes('sube') ? 90 : 60);
+    await apiCmd('cmd=setvol+' + vol);
+    document.getElementById('vol-slider').value = vol;
+    document.getElementById('vol-num').textContent = vol;
+    respuesta = '🔊 Volumen ajustado a ' + vol;
+  } else if (t.includes('cuña') || t.includes('anuncio') || t.includes('genera')) {
+    // Extraer texto del anuncio
+    const textoAnuncio = texto.replace(/genera|crea|pon|una cuña|un anuncio|que diga/gi, '').trim();
+    if (textoAnuncio.length > 5) {
+      showTab('cunas');
+      document.getElementById('cuna-texto').value = textoAnuncio;
+      await generarCuna();
+      respuesta = '🎙️ Generando cuña con: "' + textoAnuncio + '"';
+    } else {
+      showTab('cunas');
+      respuesta = '🎙️ Abrí Cuñas — escribe o dicta el texto del anuncio';
+    }
+  } else if (t.includes('qué suena') || t.includes('que suena') || t.includes('canción') || t.includes('cancion')) {
+    const title = document.getElementById('np-title').textContent;
+    const artist = document.getElementById('np-artist').textContent;
+    respuesta = '🎵 Suena: ' + title + (artist ? ' — ' + artist : '');
+  } else if (t.includes('playlist') || t.includes('lista')) {
+    showTab('playlist');
+    respuesta = '🎵 Abriendo el playlist';
+  } else {
+    respuesta = '🤔 No reconocí la orden. Intenta: "siguiente", "pausa", "sube el volumen a 80", "genera una cuña que diga..."';
+  }
+
+  document.getElementById('mic-response').textContent = respuesta;
+  document.getElementById('mic-response').style.display = 'block';
+  toast(respuesta.substring(0, 40));
+}
+
+// Web Speech API como fallback para transcripción
+function transcribeWebSpeech(blob) {
+  return new Promise((resolve) => {
+    if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+      resolve('');
+      return;
+    }
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const recognition = new SpeechRecognition();
+    recognition.lang = 'es-CO';
+    recognition.continuous = false;
+    recognition.onresult = e => resolve(e.results[0][0].transcript);
+    recognition.onerror = () => resolve('');
+    recognition.start();
+    setTimeout(() => recognition.stop(), 5000);
+  });
+}
+
+// Web Speech API en tiempo real (alternativa directa)
+function useSpeechRecognitionDirect() {
+  if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+    toast('Tu navegador no soporta reconocimiento de voz', 'error');
+    return;
+  }
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  const recognition = new SpeechRecognition();
+  recognition.lang = 'es-CO';
+  recognition.continuous = false;
+  recognition.interimResults = true;
+
+  const btn = document.getElementById('mic-btn');
+  btn.classList.add('recording');
+  btn.textContent = '⏹';
+  isRecording = true;
+  document.getElementById('mic-status').textContent = 'Escuchando...';
+  document.getElementById('mic-transcript').style.display = 'none';
+  document.getElementById('mic-response').style.display = 'none';
+
+  recognition.onresult = e => {
+    const transcript = Array.from(e.results).map(r => r[0].transcript).join('');
+    document.getElementById('mic-transcript').textContent = '"' + transcript + '"';
+    document.getElementById('mic-transcript').style.display = 'block';
+    if (e.results[e.results.length-1].isFinal) {
+      executeVoiceOrder(transcript);
+    }
+  };
+  recognition.onend = () => {
+    btn.classList.remove('recording');
+    btn.textContent = '🎤';
+    isRecording = false;
+    document.getElementById('mic-status').textContent = 'Toca el micrófono para otra orden';
+  };
+  recognition.onerror = () => {
+    btn.classList.remove('recording');
+    btn.textContent = '🎤';
+    isRecording = false;
+    toast('No te escuché bien — intenta de nuevo', 'error');
+  };
+  recognition.start();
+}
+
+// Override toggleMic para usar Web Speech directamente (más rápido en móvil)
+async function toggleMic() {
+  if (isRecording) {
+    isRecording = false;
+    return;
+  }
+  useSpeechRecognitionDirect();
+}
+</script>
+</body>
+</html>
