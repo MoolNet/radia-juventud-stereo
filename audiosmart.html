@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Audio Smart PRO</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #0a0a0f; color: #f0f0f0; font-family: 'Segoe UI', sans-serif; min-height: 100vh; }
+
+  /* ===== LOGIN ===== */
+  #login-screen {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    min-height: 100vh; padding: 20px;
+  }
+  .login-logo { font-size: 42px; font-weight: 900; color: #e63946; letter-spacing: -2px; margin-bottom: 4px; }
+  .login-sub { color: #888; font-size: 13px; margin-bottom: 40px; }
+  .login-box { background: #16161f; border-radius: 16px; padding: 32px; width: 100%; max-width: 360px; }
+  .login-box label { font-size: 12px; color: #888; text-transform: uppercase; letter-spacing: 1px; display: block; margin-bottom: 8px; }
+  .login-box input {
+    width: 100%; padding: 14px 16px; background: #0a0a0f; border: 1px solid #2a2a3a;
+    border-radius: 10px; color: #f0f0f0; font-size: 18px; font-weight: 700; letter-spacing: 3px;
+    text-transform: uppercase; text-align: center; outline: none; margin-bottom: 16px;
+  }
+  .login-box input:focus { border-color: #e63946; }
+  .btn-login {
+    width: 100%; padding: 14px; background: #e63946; border: none; border-radius: 10px;
+    color: white; font-size: 16px; font-weight: 700; cursor: pointer; transition: background 0.2s;
+  }
+  .btn-login:hover { background: #c1121f; }
+  .btn-login:disabled { opacity: 0.5; cursor: not-allowed; }
+  .login-error { color: #f87171; font-size: 13px; margin-top: 10px; text-align: center; min-height: 20px; }
+
+  /* ===== APP ===== */
+  #app-screen { display: none; padding-bottom: 80px; }
+
+  .header {
+    background: #16161f; padding: 14px 20px;
+    display: flex; align-items: center; justify-content: space-between;
+    position: sticky; top: 0; z-index: 100; border-bottom: 1px solid #2a2a3a;
+  }
+  .header-left { display: flex; flex-direction: column; }
+  .header-logo { font-size: 18px; font-weight: 900; color: #e63946; letter-spacing: -0.5px; }
+  .header-negocio { font-size: 13px; color: #ccc; font-weight: 600; margin-top: 1px; }
+  .header-tipo { font-size: 11px; color: #555; text-transform: uppercase; letter-spacing: 1px; }
+  .btn-logout { background: none; border: 1px solid #2a2a3a; color: #888; padding: 6px 12px; border-radius: 8px; cursor: pointer; font-size: 12px; }
+
+  /* ===== TABS ===== */
+  .bottom-nav {
+    position: fixed; bottom: 0; left: 0; right: 0; background: #16161f;
+    border-top: 1px solid #2a2a3a; display: flex; z-index: 100;
+  }
+  .nav-btn {
+    flex: 1; padding: 10px 4px; background: none; border: none; color: #555;
+    cursor: pointer; font-size: 9px; display: flex; flex-direction: column; align-items: center; gap: 3px;
+  }
+  .nav-btn .icon { font-size: 20px; }
+  .nav-btn.active { color: #e63946; }
+  .tab { display: none; padding: 16px; }
+  .tab.active { display: block; }
+
+  /* ===== CARDS ===== */
+  .card { background: #16161f; border-radius: 16px; padding: 20px; border: 1px solid #2a2a3a; margin-bottom: 14px; }
+  .card-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #e63946; margin-bottom: 14px; }
+
+  /* ===== ANUNCIOS RÁPIDOS ===== */
+  .productos-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .producto-btn {
+    background: #0a0a0f; border: 1px solid #2a2a3a; border-radius: 12px;
+    padding: 14px 10px; color: #f0f0f0; font-size: 13px; font-weight: 600;
+    cursor: pointer; text-align: center; transition: all 0.2s;
+    display: flex; flex-direction: column; align-items: center; gap: 6px;
+  }
+  .producto-btn:hover { border-color: #e63946; background: #1a0a0f; }
+  .producto-btn .p-icon { font-size: 24px; }
+  .producto-btn.loading { opacity: 0.6; pointer-events: none; }
+
+  /* ===== CREAR ANUNCIO ===== */
+  .form-group { margin-bottom: 14px; }
+  .form-group label { font-size: 12px; color: #888; display: block; margin-bottom: 6px; }
+  .form-group input, .form-group select, .form-group textarea {
+    width: 100%; padding: 12px 14px; background: #0a0a0f; border: 1px solid #2a2a3a;
+    border-radius: 10px; color: #f0f0f0; font-size: 14px; outline: none; font-family: inherit;
+  }
+  .form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-color: #e63946; }
+  .form-group textarea { resize: none; height: 80px; }
+  .form-group select option { background: #16161f; }
+
+  .btn-gen {
+    width: 100%; padding: 13px; background: #e63946; border: none; border-radius: 10px;
+    color: white; font-weight: 700; cursor: pointer; font-size: 15px; margin-bottom: 10px;
+    transition: background 0.2s;
+  }
+  .btn-gen:hover { background: #c1121f; }
+  .btn-gen:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .audio-result { display: none; margin-top: 12px; }
+  .audio-result audio { width: 100%; margin-bottom: 10px; border-radius: 8px; }
+  .btn-insertar {
+    width: 100%; padding: 12px; background: #1a3a2a; border: 1px solid #2d7a4f;
+    border-radius: 10px; color: #4ade80; font-weight: 700; cursor: pointer; font-size: 14px;
+  }
+  .btn-insertar:hover { background: #2d7a4f; color: white; }
+
+  /* ===== MÚSICA ===== */
+  .generos-list { display: flex; flex-direction: column; gap: 8px; }
+  .genero-item {
+    display: flex; align-items: center; justify-content: space-between;
+    background: #0a0a0f; border: 1px solid #2a2a3a; border-radius: 12px; padding: 14px 16px;
+    cursor: pointer; transition: all 0.2s;
+  }
+  .genero-item:hover { border-color: #e63946; }
+  .genero-item.active { border-color: #e63946; background: #1a0a0f; }
+  .genero-info { display: flex; align-items: center; gap: 10px; }
+  .genero-icon { font-size: 22px; }
+  .genero-name { font-size: 14px; font-weight: 600; }
+  .genero-badge { font-size: 10px; color: #e63946; background: #e6394620; padding: 3px 8px; border-radius: 20px; }
+
+  /* ===== CONFIG ===== */
+  .config-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #1a1a2a; }
+  .config-item:last-child { border-bottom: none; }
+  .config-label { font-size: 13px; color: #ccc; }
+  .config-value { font-size: 13px; color: #888; }
+  .config-badge { font-size: 11px; background: #e6394620; color: #e63946; padding: 4px 10px; border-radius: 20px; font-weight: 700; }
+
+  /* ===== TOAST ===== */
+  #toast {
+    position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%);
+    background: #1a3a2a; border: 1px solid #2d7a4f; color: #4ade80;
+    padding: 10px 20px; border-radius: 10px; font-size: 13px; font-weight: 600;
+    opacity: 0; transition: opacity 0.3s; pointer-events: none; z-index: 999; white-space: nowrap;
+  }
+  #toast.error { background: #3a1a1a; border-color: #7a2d2d; color: #f87171; }
+  #toast.show { opacity: 1; }
+
+  /* ===== SPINNER ===== */
+  .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid #ffffff40; border-top-color: white; border-radius: 50%; animation: spin 0.7s linear infinite; vertical-align: middle; margin-right: 6px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ===== LOADING OVERLAY ===== */
+  #loading-overlay {
+    position: fixed; inset: 0; background: #0a0a0f;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    z-index: 9999; gap: 16px;
+  }
+  .loading-logo { font-size: 48px; font-weight: 900; color: #e63946; letter-spacing: -2px; }
+  .loading-text { font-size: 14px; color: #888; }
+  .loading-dots::after { content: ''; animation: dots 1.5s infinite; }
+  @keyframes dots { 0%{content:'.'} 33%{content:'..'} 66%{content:'...'} }
+
+  .vol-section { display: flex; align-items: center; gap: 12px; }
+  input[type=range] { flex: 1; -webkit-appearance: none; height: 4px; background: #2a2a3a; border-radius: 4px; outline: none; }
+  input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 18px; height: 18px; border-radius: 50%; background: #e63946; cursor: pointer; }
+  .vol-num { font-size: 13px; color: #888; width: 32px; text-align: right; }
+</style>
+</head>
+<body>
+
+<!-- LOADING -->
+<div id="loading-overlay" style="display:none;">
+  <div class="loading-logo">AS</div>
+  <div class="loading-text loading-dots">Cargando perfil</div>
+</div>
+
+<!-- TOAST -->
+<div id="toast"></div>
+
+<!-- ===== LOGIN ===== -->
+<div id="login-screen">
+  <div class="login-logo">Audio Smart</div>
+  <div class="login-sub">PRO · Sistema de anuncios con IA</div>
+  <div class="login-box">
+    <label>Código de acceso</label>
+    <input type="text" id="inp-codigo" placeholder="PAN001" maxlength="8"
+      oninput="this.value=this.value.toUpperCase()"
+      onkeydown="if(event.key==='Enter')doLogin()">
+    <button class="btn-login" onclick="doLogin()" id="btn-entrar">Entrar</button>
+    <div class="login-error" id="login-error"></div>
+  </div>
+</div>
+
+<!-- ===== APP ===== -->
+<div id="app-screen">
+
+  <div class="header">
+    <div class="header-left">
+      <div class="header-logo">Audio Smart PRO</div>
+      <div class="header-negocio" id="hdr-negocio">—</div>
+      <div class="header-tipo" id="hdr-tipo">—</div>
+    </div>
+    <button class="btn-logout" onclick="doLogout()">Salir</button>
+  </div>
+
+  <!-- TAB: RÁPIDO -->
+  <div class="tab active" id="tab-rapido">
+    <div class="card">
+      <div class="card-title">⚡ Anuncios Rápidos</div>
+      <div class="productos-grid" id="productos-grid">
+        <div style="color:#888;font-size:13px;grid-column:1/-1;text-align:center;padding:20px;">Cargando productos...</div>
+      </div>
+    </div>
+    <div class="card" id="audio-rapido-result" style="display:none;">
+      <div class="card-title">🎙️ Anuncio generado</div>
+      <audio id="audio-rapido" controls style="width:100%;margin-bottom:10px;border-radius:8px;"></audio>
+      <button class="btn-insertar" onclick="insertarAnuncioRapido()">📥 Insertar en cola</button>
+    </div>
+  </div>
+
+  <!-- TAB: CREAR -->
+  <div class="tab" id="tab-crear">
+    <div class="card">
+      <div class="card-title">🎙️ Crear Anuncio con IA</div>
+      <div class="form-group">
+        <label>Producto</label>
+        <input type="text" id="cr-producto" placeholder="Ej: Pan de queso">
+      </div>
+      <div class="form-group">
+        <label>Precio</label>
+        <input type="text" id="cr-precio" placeholder="Ej: $1.500">
+      </div>
+      <div class="form-group">
+        <label>Tono</label>
+        <select id="cr-tono">
+          <option value="urgente">🔥 Urgente — ¡Corre antes de que se agoten!</option>
+          <option value="familiar">❤️ Familiar — Cálido y cercano</option>
+          <option value="promocion">💰 Promoción — Oferta especial</option>
+          <option value="festivo">🎉 Festivo — Para celebrar</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Voz</label>
+        <select id="cr-voz">
+          <option value="masculine">Masculina</option>
+          <option value="feminine">Femenina</option>
+        </select>
+      </div>
+      <button class="btn-gen" id="btn-generar" onclick="generarAnuncio()">✨ Generar anuncio</button>
+      <div class="audio-result" id="audio-creado-result">
+        <audio id="audio-creado" controls style="width:100%;"></audio>
+        <button class="btn-insertar" onclick="insertarAnuncioCreado()">📥 Insertar en cola</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB: MÚSICA -->
+  <div class="tab" id="tab-musica">
+    <div class="card">
+      <div class="card-title">🎵 Géneros musicales</div>
+      <div class="generos-list" id="generos-list">
+        <!-- Se llena dinámicamente según tipo de negocio -->
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">🔊 Volumen</div>
+      <div class="vol-section">
+        <span>🔈</span>
+        <input type="range" id="vol-slider" min="0" max="100" value="70" oninput="cambiarVol(this.value)">
+        <span class="vol-num" id="vol-num">70</span>
+        <span>🔊</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB: CONFIG -->
+  <div class="tab" id="tab-config">
+    <div class="card">
+      <div class="card-title">⚙️ Mi cuenta</div>
+      <div class="config-item">
+        <span class="config-label">Negocio</span>
+        <span class="config-value" id="cfg-negocio">—</span>
+      </div>
+      <div class="config-item">
+        <span class="config-label">Código</span>
+        <span class="config-value" id="cfg-codigo">—</span>
+      </div>
+      <div class="config-item">
+        <span class="config-label">Tipo</span>
+        <span class="config-value" id="cfg-tipo">—</span>
+      </div>
+      <div class="config-item">
+        <span class="config-label">Plan</span>
+        <span class="config-badge" id="cfg-plan">PRO</span>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">ℹ️ Audio Smart PRO</div>
+      <div class="config-item">
+        <span class="config-label">Versión</span>
+        <span class="config-value">2.0 Universal</span>
+      </div>
+      <div class="config-item">
+        <span class="config-label">Backend</span>
+        <span class="config-value">Google Sheets + Apps Script</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- NAV -->
+  <nav class="bottom-nav">
+    <button class="nav-btn active" onclick="showTab('rapido',this)">
+      <span class="icon">⚡</span>Rápido
+    </button>
+    <button class="nav-btn" onclick="showTab('crear',this)">
+      <span class="icon">🎙️</span>Crear
+    </button>
+    <button class="nav-btn" onclick="showTab('musica',this)">
+      <span class="icon">🎵</span>Música
+    </button>
+    <button class="nav-btn" onclick="showTab('config',this)">
+      <span class="icon">⚙️</span>Config
+    </button>
+  </nav>
+
+</div>
+
+<script>
+// ===== CONFIG =====
+const API_SHEET = 'https://script.google.com/macros/s/AKfycbz5kFN5kfPTq-_ackWnEVsevRuzvJOzePgFC1cZdws3dMBRPyZiibIN1H5FNfOnKFg73g/exec';
+
+// Iconos por tipo de producto (heurística)
+const PRODUCT_ICONS = {
+  pan:'🍞', café:'☕', almojábana:'🧀', pandeyuca:'🫓', croissant:'🥐',
+  naranja:'🍊', banano:'🍌', tomate:'🍅', papa:'🥔', zanahoria:'🥕',
+  desayuno:'🍳', almuerzo:'🍽️', cena:'🌙', snack:'🍪', bebida:'🥤',
+  vallenato:'🪗', salsa:'💃', pop:'🎵', reggaeton:'🎤', balada:'🎶',
+};
+
+// Géneros por tipo de negocio
+const GENEROS_POR_TIPO = {
+  panaderia: [
+    {icon:'🎸',name:'Pop',key:'pop'},
+    {icon:'🎷',name:'Baladas',key:'balada'},
+    {icon:'🪗',name:'Vallenato',key:'vallenato'},
+    {icon:'🌴',name:'Tropical',key:'tropical'},
+  ],
+  fruver: [
+    {icon:'🎷',name:'Salsa',key:'salsa'},
+    {icon:'🌴',name:'Tropical',key:'tropical'},
+    {icon:'🪗',name:'Vallenato',key:'vallenato'},
+    {icon:'🎸',name:'Pop',key:'pop'},
+  ],
+  hotel: [
+    {icon:'🎹',name:'Jazz',key:'jazz'},
+    {icon:'🎷',name:'Baladas',key:'balada'},
+    {icon:'🎸',name:'Pop',key:'pop'},
+    {icon:'🎻',name:'Clásica',key:'clasica'},
+  ],
+  emisora: [
+    {icon:'🪗',name:'Vallenato',key:'vallenato'},
+    {icon:'💃',name:'Salsa',key:'salsa'},
+    {icon:'🎸',name:'Pop',key:'pop'},
+    {icon:'🎤',name:'Reggaetón',key:'reggaeton'},
+    {icon:'🎷',name:'Baladas',key:'balada'},
+    {icon:'🌴',name:'Tropical',key:'tropical'},
+  ],
+};
+
+// ===== ESTADO =====
+let perfil = null;
+let audioRapidoBlob = null;
+let audioCreadoBlob = null;
+
+// ===== LOGIN =====
+async function doLogin() {
+  const codigo = document.getElementById('inp-codigo').value.trim().toUpperCase();
+  if (!codigo) { showError('Ingresa tu código de acceso'); return; }
+
+  document.getElementById('btn-entrar').disabled = true;
+  document.getElementById('btn-entrar').innerHTML = '<span class="spinner"></span>Verificando...';
+  document.getElementById('login-error').textContent = '';
+
+  try {
+    const res = await fetch(`${API_SHEET}?action=getCliente&codigo=${codigo}`);
+    const data = await res.json();
+
+    if (!data.success) {
+      showError('Código no válido. Verifica e intenta de nuevo.');
+      return;
+    }
+
+    if (!data.activo) {
+      showError('Esta cuenta está inactiva. Contacta a soporte.');
+      return;
+    }
+
+    perfil = data;
+    localStorage.setItem('as_perfil', JSON.stringify(perfil));
+    cargarApp();
+
+  } catch(e) {
+    showError('Error de conexión. Intenta de nuevo.');
+  } finally {
+    document.getElementById('btn-entrar').disabled = false;
+    document.getElementById('btn-entrar').textContent = 'Entrar';
+  }
+}
+
+function showError(msg) {
+  document.getElementById('login-error').textContent = msg;
+}
+
+// ===== CARGAR APP =====
+function cargarApp() {
+  // Header
+  document.getElementById('hdr-negocio').textContent = perfil.nombre;
+  document.getElementById('hdr-tipo').textContent = perfil.tipo;
+
+  // Config tab
+  document.getElementById('cfg-negocio').textContent = perfil.nombre;
+  document.getElementById('cfg-codigo').textContent = perfil.codigo;
+  document.getElementById('cfg-tipo').textContent = perfil.tipo;
+
+  // Productos rápidos
+  renderProductos();
+
+  // Géneros según tipo
+  renderGeneros();
+
+  // Mostrar app
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('app-screen').style.display = 'block';
+}
+
+function renderProductos() {
+  const grid = document.getElementById('productos-grid');
+  if (!perfil.productos || !perfil.productos.length) {
+    grid.innerHTML = '<div style="color:#888;font-size:13px;grid-column:1/-1;text-align:center;padding:20px;">Sin productos configurados</div>';
+    return;
+  }
+  grid.innerHTML = perfil.productos.map(p => `
+    <button class="producto-btn" onclick="generarRapido('${p}')">
+      <span class="p-icon">${PRODUCT_ICONS[p.toLowerCase()] || '📦'}</span>
+      <span>${capitalizar(p)}</span>
+    </button>
+  `).join('');
+}
+
+function renderGeneros() {
+  const lista = document.getElementById('generos-list');
+  const generos = GENEROS_POR_TIPO[perfil.tipo] || GENEROS_POR_TIPO['panaderia'];
+  lista.innerHTML = generos.map((g, i) => `
+    <div class="genero-item ${i===0?'active':''}" onclick="seleccionarGenero(this,'${g.key}')">
+      <div class="genero-info">
+        <span class="genero-icon">${g.icon}</span>
+        <span class="genero-name">${g.name}</span>
+      </div>
+      ${i===0 ? '<span class="genero-badge">Activo</span>' : ''}
+    </div>
+  `).join('');
+}
+
+// ===== ANUNCIOS RÁPIDOS =====
+async function generarRapido(producto) {
+  toast(`Generando anuncio de ${producto}...`);
+  // Por ahora abre tab crear con el producto prellenado
+  document.getElementById('cr-producto').value = capitalizar(producto);
+  showTab('crear', document.querySelectorAll('.nav-btn')[1]);
+  document.getElementById('cr-precio').focus();
+}
+
+function insertarAnuncioRapido() {
+  toast('✅ Anuncio insertado en cola');
+  document.getElementById('audio-rapido-result').style.display = 'none';
+}
+
+// ===== CREAR ANUNCIO =====
+async function generarAnuncio() {
+  const producto = document.getElementById('cr-producto').value.trim();
+  const precio = document.getElementById('cr-precio').value.trim();
+  const tono = document.getElementById('cr-tono').value;
+
+  if (!producto) { toast('Ingresa el producto', true); return; }
+  if (!precio) { toast('Ingresa el precio', true); return; }
+
+  const btn = document.getElementById('btn-generar');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>Generando...';
+
+  try {
+    const tonos = {
+      urgente: '¡Corre antes de que se agoten!',
+      familiar: 'Un producto especial para tu familia.',
+      promocion: '¡Oferta especial por tiempo limitado!',
+      festivo: '¡Celebra con nosotros!'
+    };
+
+    const texto = `En ${perfil.nombre}, ${producto} a solo ${precio}. ${tonos[tono]} ¡Visítanos hoy!`;
+    toast('Texto listo — conecta ElevenLabs para audio IA');
+
+    // Mostrar texto generado por ahora
+    document.getElementById('audio-creado-result').style.display = 'block';
+    toast(`📝 "${texto}"`);
+
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '✨ Generar anuncio';
+  }
+}
+
+function insertarAnuncioCreado() {
+  toast('✅ Anuncio insertado en cola');
+}
+
+// ===== MÚSICA =====
+function seleccionarGenero(el, key) {
+  document.querySelectorAll('.genero-item').forEach(g => {
+    g.classList.remove('active');
+    const badge = g.querySelector('.genero-badge');
+    if (badge) badge.remove();
+  });
+  el.classList.add('active');
+  el.innerHTML += '<span class="genero-badge">Activo</span>';
+  toast(`🎵 Género: ${key}`);
+}
+
+// ===== VOLUMEN =====
+function cambiarVol(val) {
+  document.getElementById('vol-num').textContent = val;
+  toast(`🔊 Volumen: ${val}%`);
+}
+
+// ===== UTILS =====
+function showTab(name, btn) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  btn.classList.add('active');
+}
+
+function capitalizar(str) {
+  return str.charAt(0).toUpperCase() + str.slice(1);
+}
+
+let toastTimer;
+function toast(msg, error=false) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'show' + (error ? ' error' : '');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.className = '', 3000);
+}
+
+function doLogout() {
+  localStorage.removeItem('as_perfil');
+  perfil = null;
+  document.getElementById('app-screen').style.display = 'none';
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('inp-codigo').value = '';
+  document.getElementById('login-error').textContent = '';
+}
+
+// ===== INIT: session persistente =====
+window.addEventListener('DOMContentLoaded', () => {
+  const saved = localStorage.getItem('as_perfil');
+  if (saved) {
+    try {
+      perfil = JSON.parse(saved);
+      cargarApp();
+    } catch(e) {
+      localStorage.removeItem('as_perfil');
+    }
+  }
+});
+</script>
+</body>
+</html>
